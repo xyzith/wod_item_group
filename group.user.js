@@ -4,7 +4,7 @@
 // @updateURL       TODO https://raw.githubusercontent.com/xyzith/wod_item_group/master/group.user.js
 // @grant           none
 // @author          Taylor Tang
-// @version         1.0
+// @version         1.1
 // @description     Add item group feature
 // @include         *://*.world-of-dungeons.org/wod/spiel/hero/items.php*
 // ==/UserScript==
@@ -53,6 +53,7 @@
 
         this.el = row;
         this.name = name.querySelector('a').textContent.replace(/!$/, '');
+        this.item_useability = name.querySelector('a').className;
         this.use = use ? Number(use[1]) : 1;
         this.price = price_el ? Number(price_el.textContent) : 0;
         this.sell_checkbox = price_el ? price_el.querySelector('input') : null;
@@ -179,6 +180,7 @@
     ItemGroup.prototype.renderItemName = function(row) {
         var text = row.insertCell();
         text.textContent = this.name + ' (' + this.use + ')';
+        text.className = this.child[0].item_useability;
     }
 
     ItemGroup.prototype.createContainer = function() {
