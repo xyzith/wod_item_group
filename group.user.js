@@ -4,7 +4,7 @@
 // @updateURL       TODO https://raw.githubusercontent.com/xyzith/wod_item_group/master/group.user.js
 // @grant           none
 // @author          Taylor Tang
-// @version         1.1
+// @version         1.2
 // @description     Add item group feature
 // @include         *://*.world-of-dungeons.org/wod/spiel/hero/items.php*
 // ==/UserScript==
@@ -15,7 +15,6 @@
         ITEM: '物品',
         GROUP: '团队',
         SELL: '出售',
-        POCKET: '口袋',
         POSITION: '位置',
         WAREHOUSE: '仓库',
         GROUP_WAREHOUSE2: '团队仓库',
@@ -125,7 +124,6 @@
 
         position.style.textAlign = 'right';
         select.appendChild(newOps('-------', ''));
-        select.appendChild(newOps(LANGUAGE.POCKET, 'go_tasche'));
         select.appendChild(newOps(LANGUAGE.WAREHOUSE, 'go_lager'));
         select.appendChild(newOps(LANGUAGE.GROUP_WAREHOUSE2, 'go_group_2'));
         select.appendChild(newOps(LANGUAGE.GROUP_WAREHOUSE, 'go_group'));
