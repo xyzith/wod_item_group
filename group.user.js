@@ -4,7 +4,7 @@
 // @updateURL       https://raw.githubusercontent.com/xyzith/wod_item_group/master/group.user.js
 // @grant           none
 // @author          Taylor Tang
-// @version         1.4
+// @version         1.5
 // @description     Add item group feature
 // @include         *://*.world-of-dungeons.org/wod/spiel/hero/items.php*
 // ==/UserScript==
@@ -27,10 +27,10 @@
         var row0_color = getComputedStyle(document.querySelector('tr.row0')).getPropertyValue('background-color');
         var row1_color = getComputedStyle(document.querySelector('tr.row1')).getPropertyValue('background-color');
         document.head.appendChild(style);
-        style.sheet.insertRule('table.content_table > tbody > :nth-child(2n) { background-color: ' + row0_color + '; }');
-        style.sheet.insertRule('table.content_table > tbody > :nth-child(2n+1) { background-color: ' + row1_color + '; }');
-
+        style.sheet.insertRule('table.content_table > tbody > :nth-child(2n) { background-color: ' + row0_color + '; }', 0);
+        style.sheet.insertRule('table.content_table > tbody > :nth-child(2n+1) { background-color: ' + row1_color + '; }', 0);
     }
+
     function chomp(str) {
         return str.replace(/[ \xA0\n\t\r]*/g, '');
     }
@@ -216,7 +216,7 @@
         row.style.cursor = 'pointer';
         row.addEventListener('click', (function(e) {
             var tag = e.target.tagName.toLowerCase();
-            if(tag != 'input' && tag != 'select') {
+            if(tag != 'input' && tag != 'select' && tag != 'option') {
                 this.toggleChild();
             }
         }).bind(this));
