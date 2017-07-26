@@ -1,10 +1,10 @@
 // ==UserScript==
-// @name            WOD Item Group 
+// @name            WOD Item Group
 // @namespace       ttang.tw
 // @updateURL       TODO https://raw.githubusercontent.com/xyzith/wod_item_group/master/group.user.js
 // @grant           none
 // @author          Taylor Tang
-// @version         1.2
+// @version         1.3
 // @description     Add item group feature
 // @include         *://*.world-of-dungeons.org/wod/spiel/hero/items.php*
 // ==/UserScript==
@@ -24,8 +24,12 @@
 
     function addCss() {
         var style = document.createElement('style');
+        var row0_color = getComputedStyle(document.querySelector('tr.row0')).getPropertyValue('background-color');
+        var row1_color = getComputedStyle(document.querySelector('tr.row1')).getPropertyValue('background-color');
         document.head.appendChild(style);
-        style.sheet.insertRule('.hide { display: none; }');
+        style.sheet.insertRule('table.content_table > tbody > :nth-child(2n) { background-color: ' + row0_color + '; }');
+        style.sheet.insertRule('table.content_table > tbody > :nth-child(2n+1) { background-color: ' + row1_color + '; }');
+
     }
     function chomp(str) {
         return str.replace(/[ \xA0\n\t\r]*/g, '');
@@ -34,8 +38,8 @@
     function findTable() {
         function findSiblings(el) {
             var next = el.nextElementSibling;
-            if(!next) { return null; };
-            if(next.tagName.toLowerCase() === 'table' && next.className === 'content_table') {
+            if(!next) { return null; }
+            if(next.tagName.toLowerCase() === 'table' && next.classList.contains('content_table')) {
                 return next;
             } else {
                 return findSiblings(next);
@@ -61,29 +65,34 @@
     }
 
     Item.prototype.getPrice = function(el) {
-        var price = el.querySelector('img[title="' + LANGUAGE.COIN + '"]')
+        var price = el.querySelector('img[title="' + LANGUAGE.COIN + '"]');
         if(price) {
             return price.parentNode;
         }
         return null;
-    }
+    };
 
     Item.prototype.getGroupItemCheckbox = function(el) {
         return el.querySelector('input[name^="SetGrpItem"]');
-    }
+    };
 
     Item.prototype.getItemPositionSelect = function(el) {
         return el.querySelector('select[name^="EquipItem"]');
-    }
+    };
 
     function ItemGroup() {
         function useGetter() {
-            var use = this.child.map((k) => (k['use']));
+            var use = this.child.map((k) => (k.use));
             return use.reduce((sum, value) => (sum + value));
         }
         function priceGetter() {
-            var use = this.child.map((k) => (k['price']));
+            var use = this.child.map((k) => (k.price));
             return use.reduce((sum, value) => (sum + value));
+        }
+
+        function indexGetter() {
+            console.log(this.child[0]);
+            return this.child[0].el.cells[0].textContent;
         }
 
         this.child = [];
@@ -97,12 +106,23 @@
             get: priceGetter.bind(this),
             writeable: false
         });
+
+        Object.defineProperty(this, 'index', {
+            get: indexGetter.bind(this),
+            writeable: false
+        });
     }
 
     ItemGroup.prototype.add = function(item) {
         this.child.push(item);
         this.name = item.name;
-    }
+    };
+
+    ItemGroup.prototype.renderIndex = function(row) {
+        var index = row.insertCell();
+        index.style.textAlign = 'right';
+        index.textContent = this.index;
+    };
 
     ItemGroup.prototype.renderItemPosition = function(row) {
         function newOps(txt, value) {
@@ -110,7 +130,6 @@
             opt.textContent = txt;
             opt.value = value;
             return opt;
-            
         }
         function setValue(select, value) {
             var orig_value = select.value;
@@ -138,7 +157,7 @@
             });
         }).bind(this));
         position.appendChild(select);
-    }
+    };
 
     ItemGroup.prototype.renderItemPrice = function(row) {
         var price = row.insertCell();
@@ -157,7 +176,7 @@
         }).bind(this));
         price.appendChild(text);
         price.appendChild(checkbox);
-    }
+    };
 
     ItemGroup.prototype.renderGroupSetter = function(row) {
         var cell = row.insertCell();
@@ -173,32 +192,44 @@
             });
         }).bind(this));
         cell.appendChild(setter);
-    }
+    };
 
     ItemGroup.prototype.renderItemName = function(row) {
         var text = row.insertCell();
-        text.textContent = this.name + ' (' + this.use + ')';
-        text.className = this.child[0].item_useability;
-    }
+        var a = document.createElement('a');
+        a.innerHTML = '&#128194 ';
+        a.textContent += this.name + ' (' + this.use + ')';
+        a.className = this.child[0].item_useability;
+        text.appendChild(a);
+    };
 
-    ItemGroup.prototype.createContainer = function() {
+    ItemGroup.prototype.toggleChild = function() {
+        if(this.child[0].el.parentNode) {
+            this.shrunk();
+        } else {
+            this.expand();
+        }
+    };
+
+    ItemGroup.prototype.createContainer = function(table) {
         var row = table.querySelector('tbody').insertRow();
-        row.className = 'row0';
+        row.className = 'item_group';
         row.style.cursor = 'pointer';
         row.addEventListener('click', (function(e) {
             var tag = e.target.tagName.toLowerCase();
             if(tag != 'input' && tag != 'select') {
-                this.child.forEach((c) => ( c.el.classList.toggle('hide')));
+                this.toggleChild();
             }
         }).bind(this));
         this.child.forEach( (c) => c.el.classList.add('hide'));
         return row;
-    }
+    };
 
     ItemGroup.prototype.parseCell = function(cell, row) {
         var btn, title = (btn = cell.querySelector('input[type="submit"]')) ? btn.value : cell.textContent;
-
-        if(title.match(LANGUAGE.GROUP)) {
+        if(cell == cell.parentNode.cells[0]) {
+            this.renderIndex(row);
+        } else if(title.match(LANGUAGE.GROUP)) {
             this.renderGroupSetter(row);
         } else if(title.match(LANGUAGE.SELL)) {
             this.renderItemPrice(row);
@@ -209,42 +240,57 @@
         } else {
             row.insertCell();
         }
-    }
+    };
 
     ItemGroup.prototype.render = function(table, idx) {
         var head = table.tHead.querySelector('.header');
 
         if(this.child.length != 1) {
-            var row = this.createContainer();
+            this.row = this.createContainer(table);
             for(var i = 0; i < head.children.length; i++) {
-                this.parseCell(head.children[i], row);
+                this.parseCell(head.children[i], this.row);
             }
         }
-        this.child.forEach( (c) => table.querySelector('tbody').appendChild(c.el));
-        return idx;
-    }
+    };
 
-    var item_db = {};
+    ItemGroup.prototype.shrunk = function() {
+        this.child.forEach((c) => c.el.remove());
+    };
 
-    function parseRow(row) {
-        var item = new Item(row);
-        if(!item_db[item.name]) {
-            item_db[item.name] = new ItemGroup();
+    ItemGroup.prototype.expand = function() {
+        var table_body = this.row.parentNode;
+        if(this.row) {
+            this.child.reverse().forEach((c) => table_body.insertBefore(c.el, this.row.nextSibling));
+            this.child.reverse();
         }
-        item_db[item.name].add(item);
-    }
-    var table = findTable();
+    };
 
-    addCss();
-    while(Number(table.rows[2].cells[0].textContent)) {
-        parseRow(table.rows[2]);
-        table.rows[2].remove();
+    function init() {
+        function parseRow(row) {
+            var item = new Item(row);
+            if(!item_db[item.name]) {
+                item_db[item.name] = new ItemGroup();
+            }
+            item_db[item.name].add(item);
+        }
+
+        var index = 0;
+        var item_db = {};
+        var table = findTable();
+
+        addCss();
+        while(Number(table.rows[2].cells[0].textContent)) {
+            parseRow(table.rows[2]);
+            table.rows[2].remove();
+        }
+
+        for(var k in item_db) {
+            if(item_db.hasOwnProperty(k)){
+                item_db[k].child.forEach((c) => (c.el.cells[0].textContent = ++index));
+                item_db[k].render(table);
+            }
+        }
     }
 
-    for(var k in item_db) {
-        item_db[k].render(table);
-    }
-    console.log(item_db);
-    function reIndex() {
-    }
+    init();
 })();
