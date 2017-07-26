@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name            WOD Item Group
 // @namespace       ttang.tw
-// @updateURL       TODO https://raw.githubusercontent.com/xyzith/wod_item_group/master/group.user.js
+// @updateURL       https://raw.githubusercontent.com/xyzith/wod_item_group/master/group.user.js
 // @grant           none
 // @author          Taylor Tang
 // @version         1.4
