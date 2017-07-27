@@ -4,7 +4,7 @@
 // @updateURL       https://raw.githubusercontent.com/xyzith/wod_item_group/master/group.user.js
 // @grant           none
 // @author          Taylor Tang
-// @version         1.7
+// @version         1.8
 // @description     Add item group feature
 // @include         *://*.world-of-dungeons.org/wod/spiel/hero/items.php*
 // ==/UserScript==
@@ -34,6 +34,14 @@
             style.sheet.insertRule('table.content_table > tbody > :nth-child(2n) { background-color: ' + row0_color + '; }', 0);
             style.sheet.insertRule('table.content_table > tbody > :nth-child(2n+1) { background-color: ' + row1_color + '; }', 0);
         }
+    }
+
+    function setSelectValue(select, value) {
+        if(select.querySelector('[value="' + value + '"]')) {
+            select.value = value;
+            return true;
+        }
+        return false;
     }
 
     function chomp(str) {
@@ -121,6 +129,21 @@
     ItemGroup.prototype.add = function(item) {
         this.child.push(item);
         this.name = item.name;
+        function setupSyncEvent(key) {
+            if(!item[key]) { return false; }
+            if(item[key].tagName.toLowerCase() === 'select') {
+                item[key].addEventListener('change', (function(){
+                    this.syncSelect(key);
+                }).bind(this));
+            } else {
+                item[key].addEventListener('change', (function(){
+                    this.syncCheckbox(key);
+                }).bind(this));
+            }
+        }
+        setupSyncEvent.call(this, 'sell_checkbox');
+        setupSyncEvent.call(this, 'group_item_checkbox');
+        setupSyncEvent.call(this, 'item_position_select');
     };
 
     ItemGroup.prototype.renderIndex = function(row) {
@@ -128,26 +151,52 @@
         index.style.textAlign = 'right';
         index.textContent = this.index;
     };
-
-    ItemGroup.prototype.renderItemPosition = function(row) {
+    ItemGroup.prototype.syncSelect = function(key) {
+        var el = this[key];
+        var prev, now, select;
+        if(!el) { return false; }
+        for(var i = 0; i < this.child.length; i++) {
+            select = this.child[i][key];
+            now = select.options[select.selectedIndex].value;
+            if(typeof prev === 'undefined') {
+                prev = now;
+            } else if(prev != now){
+                el.value = '0';
+                return false;
+            }
+        }
+        if(!setSelectValue(el, now.replace(/^-/, ''))) {
+            el.value = '0';
+        }
+    };
+    ItemGroup.prototype.syncCheckbox = function(key) {
+        var el = this[key];
+        var prev, now, check;
+        if(!el) { return false; }
+        for(var i = 0; i < this.child.length; i++) {
+            check = this.child[i][key];
+            if(!check) { return false; }
+            now = check.checked;
+            if(typeof prev === 'undefined') {
+                prev = now;
+            } else if(prev != now){
+                return false;
+            }
+        }
+        el.checked = now;
+    };
+    ItemGroup.prototype.renderItemPosition = function(row, head_cell) {
         function newOps(txt, value) {
             var opt = document.createElement('option');
             opt.textContent = txt;
             opt.value = value;
             return opt;
         }
-        function setValue(select, value) {
-            var orig_value = select.value;
-            select.value = value;
-            if(!select.value) {
-                select.value = orig_value;
-            }
-        }
         var position = row.insertCell();
         var select = document.createElement('select');
 
         position.style.textAlign = 'right';
-        select.appendChild(newOps('-------', ''));
+        select.appendChild(newOps('-------', '0'));
         select.appendChild(newOps(LANGUAGE.WAREHOUSE, 'go_lager'));
         select.appendChild(newOps(LANGUAGE.GROUP_WAREHOUSE2, 'go_group_2'));
         select.appendChild(newOps(LANGUAGE.GROUP_WAREHOUSE, 'go_group'));
@@ -156,15 +205,19 @@
             var value = e.target.options[e.target.selectedIndex].value;
             this.child.forEach(function(c){
                 if(c.item_position_select) {
-                    setValue(c.item_position_select, value);
-                    setValue(c.item_position_select, '-' + value);
+                    setSelectValue(c.item_position_select, value);
+                    setSelectValue(c.item_position_select, '-' + value);
                 }
             });
         }).bind(this));
         position.appendChild(select);
-    };
+        this.item_position_select = select;
+        head_cell.querySelector('select').addEventListener('change', (function() {
+            this.syncSelect('item_position_select');
+        }).bind(this));
 
-    ItemGroup.prototype.renderItemPrice = function(row) {
+    };
+    ItemGroup.prototype.renderItemPrice = function(row, head_cell) {
         var price = row.insertCell();
         var text = document.createElement('span');
         var checkbox = document.createElement('input');
@@ -173,7 +226,7 @@
         checkbox.type = 'checkbox';
         checkbox.addEventListener('change', (function(e){
             var checked = e.target.checked;
-            this.child.forEach(function(c){
+            this.child.forEach(function(c) {
                 if(c.sell_checkbox) {
                     c.sell_checkbox.checked = checked;
                 }
@@ -181,12 +234,16 @@
         }).bind(this));
         price.appendChild(text);
         price.appendChild(checkbox);
+        this.sell_checkbox = checkbox;
+        head_cell.querySelector('input[type="checkbox"]').addEventListener('change', (function() {
+            this.syncCheckbox('sell_checkbox');
+        }).bind(this));
     };
 
-    ItemGroup.prototype.renderGroupSetter = function(row) {
+    ItemGroup.prototype.renderGroupSetter = function(row, head_cell) {
         var cell = row.insertCell();
         var setter = document.createElement('input');
-        cell.style.textAlign = 'right';
+        cell.style.textAlign = 'center';
         setter.type = 'checkbox';
         setter.addEventListener('change', (function(e){
             var checked = e.target.checked;
@@ -197,6 +254,10 @@
             });
         }).bind(this));
         cell.appendChild(setter);
+        this.group_item_checkbox = setter;
+        head_cell.querySelector('input[type="checkbox"]').addEventListener('change', (function() {
+            this.syncCheckbox('group_item_checkbox');
+        }).bind(this));
     };
 
     ItemGroup.prototype.renderItemName = function(row) {
@@ -235,13 +296,13 @@
         if(cell == cell.parentNode.cells[0]) {
             this.renderIndex(row);
         } else if(title.match(LANGUAGE.GROUP)) {
-            this.renderGroupSetter(row);
+            this.renderGroupSetter(row, cell);
         } else if(title.match(LANGUAGE.SELL)) {
-            this.renderItemPrice(row);
+            this.renderItemPrice(row, cell);
         } else if(title.match(LANGUAGE.ITEM)) {
             this.renderItemName(row);
         } else if(title.match(LANGUAGE.POSITION)) {
-            this.renderItemPosition(row);
+            this.renderItemPosition(row, cell);
         } else {
             row.insertCell();
         }
@@ -255,6 +316,10 @@
             for(var i = 0; i < head.children.length; i++) {
                 this.parseCell(head.children[i], this.row);
             }
+            this.syncSelect('item_position_select');
+            this.syncCheckbox('group_item_checkbox');
+            this.syncCheckbox('sell_checkbox');
+            this.child.reverse();
         } else {
             table.tBodies[0].appendChild(this.child[0].el);
         }
@@ -272,7 +337,7 @@
     ItemGroup.prototype.expand = function() {
         var table_body = this.row.parentNode;
         if(this.row) {
-            this.child.reverse().forEach((c) => {
+            this.child.forEach((c) => {
                 c.el.remove();
                 table_body.insertBefore(c.el, this.row.nextSibling);
                 c.el.classList.remove('hidden_row');
@@ -303,10 +368,6 @@
                 if(item_db.hasOwnProperty(k)){
                     item_db[k].child.forEach((c) => (c.el.cells[0].textContent = ++index));
                     item_db[k].render(table);
-                }
-            }
-            for(var k in item_db) {
-                if(item_db.hasOwnProperty(k)){
                     item_db[k].toggleChild();
                 }
             }
