@@ -4,7 +4,7 @@
 // @updateURL       https://raw.githubusercontent.com/xyzith/wod_item_group/master/group.user.js
 // @grant           none
 // @author          Taylor Tang
-// @version         1.8
+// @version         1.9
 // @description     Add item group feature
 // @include         *://*.world-of-dungeons.org/wod/spiel/hero/items.php*
 // ==/UserScript==
@@ -368,6 +368,10 @@
                 if(item_db.hasOwnProperty(k)){
                     item_db[k].child.forEach((c) => (c.el.cells[0].textContent = ++index));
                     item_db[k].render(table);
+                }
+            }
+            for(k in item_db) { // Need 2 loop, or the table color would go wrong.
+                if(item_db.hasOwnProperty(k)){
                     item_db[k].toggleChild();
                 }
             }
