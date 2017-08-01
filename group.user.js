@@ -4,7 +4,7 @@
 // @updateURL       https://raw.githubusercontent.com/xyzith/wod_item_group/master/group.user.js
 // @grant           none
 // @author          Taylor Tang
-// @version         2.0 
+// @version         2.0
 // @description     Add item group feature
 // @include         *://*.world-of-dungeons.org/wod/spiel/hero/items.php*
 // ==/UserScript==
@@ -299,6 +299,8 @@
             a.textContent += this.child[0].item + ' (' + this.use + ')';
             a.className = this.child[0].item_useability;
             name.appendChild(a);
+        } else {
+            name.innerHTML = '&#128194 ' + this.child.length + ' items';
         }
     };
 
