@@ -4,7 +4,7 @@
 // @updateURL       https://raw.githubusercontent.com/xyzith/wod_item_group/master/group.user.js
 // @grant           none
 // @author          Taylor Tang
-// @version         2.0
+// @version         2.1
 // @description     Add item group feature
 // @include         *://*.world-of-dungeons.org/wod/spiel/hero/items.php*
 // ==/UserScript==
@@ -226,27 +226,30 @@
         }
         var select = document.createElement('select');
         var head_cell = this.thead.cells[idx];
+        var head_select = head_cell.querySelector('select');
 
-        position.style.textAlign = 'right';
-        select.appendChild(newOps('-------', '0'));
-        select.appendChild(newOps(LANGUAGE.WAREHOUSE, 'go_lager'));
-        select.appendChild(newOps(LANGUAGE.GROUP_WAREHOUSE2, 'go_group_2'));
-        select.appendChild(newOps(LANGUAGE.GROUP_WAREHOUSE, 'go_group'));
-        select.appendChild(newOps(LANGUAGE.STORAGE_ROOM, 'go_keller'));
-        select.addEventListener('change', (function(e){
-            var value = e.target.options[e.target.selectedIndex].value;
-            this.child.forEach(function(c){
-                if(c.item_position_select) {
-                    setSelectValue(c.item_position_select, value);
-                    setSelectValue(c.item_position_select, '-' + value);
-                }
-            });
-        }).bind(this));
-        position.appendChild(select);
-        this.item_position_select = select;
-        head_cell.querySelector('select').addEventListener('change', (function() {
-            this.syncSelect('item_position_select');
-        }).bind(this));
+        if(head_select) {
+            position.style.textAlign = 'right';
+            select.appendChild(newOps('-------', '0'));
+            select.appendChild(newOps(LANGUAGE.WAREHOUSE, 'go_lager'));
+            select.appendChild(newOps(LANGUAGE.GROUP_WAREHOUSE2, 'go_group_2'));
+            select.appendChild(newOps(LANGUAGE.GROUP_WAREHOUSE, 'go_group'));
+            select.appendChild(newOps(LANGUAGE.STORAGE_ROOM, 'go_keller'));
+            select.addEventListener('change', (function(e){
+                var value = e.target.options[e.target.selectedIndex].value;
+                this.child.forEach(function(c){
+                    if(c.item_position_select) {
+                        setSelectValue(c.item_position_select, value);
+                        setSelectValue(c.item_position_select, '-' + value);
+                    }
+                });
+            }).bind(this));
+            position.appendChild(select);
+            this.item_position_select = select;
+            head_select.addEventListener('change', (function() {
+                this.syncSelect('item_position_select');
+            }).bind(this));
+        }
     };
 
     ItemGroup.prototype.renderItemPrice = function(price, idx) {
