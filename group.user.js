@@ -1,10 +1,10 @@
 // ==UserScript==
 // @name            WOD Item Group
 // @namespace       ttang.tw
-// @updateURL       https://bitbucket.org/Xyzith/wod_item_group/raw/99cb31157e8ab3da9080cf924cc261725d05ec1b/group.user.js
+// @updateURL       https://raw.githubusercontent.com/xyzith/wod_item_group/master/group.user.js
 // @grant           none
 // @author          Taylor Tang
-// @version         2.2
+// @version         2.3
 // @description     Add item group feature
 // @include         *://*.world-of-dungeons.org/wod/spiel/hero/items.php*
 // ==/UserScript==
