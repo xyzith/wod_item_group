@@ -4,7 +4,7 @@
 // @updateURL       https://bitbucket.org/Xyzith/wod_item_group/raw/sync/group.user.js
 // @grant           none
 // @author          Taylor Tang
-// @version         2.3
+// @version         2.4
 // @description     Add item group feature
 // @include         *://*.world-of-dungeons.org/wod/spiel/hero/items.php*
 // ==/UserScript==
@@ -103,7 +103,6 @@
         group_item: function(idx) {
             var el = this.el.cells[idx];
             this.group_item_checkbox = el.querySelector('input[name^="SetGrpItem"]');
-            console.log(this.group_item_checkbox);
         },
         position: function(idx) {
             var el = this.el.cells[idx];
