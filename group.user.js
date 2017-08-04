@@ -1,10 +1,10 @@
 // ==UserScript==
 // @name            WOD Item Group
 // @namespace       ttang.tw
-// @updateURL       https://raw.githubusercontent.com/xyzith/wod_item_group/master/group.user.js
+// @updateURL       https://bitbucket.org/Xyzith/wod_item_group/raw/99cb31157e8ab3da9080cf924cc261725d05ec1b/group.user.js
 // @grant           none
 // @author          Taylor Tang
-// @version         2.1
+// @version         2.2
 // @description     Add item group feature
 // @include         *://*.world-of-dungeons.org/wod/spiel/hero/items.php*
 // ==/UserScript==
@@ -102,7 +102,8 @@
         },
         group_item: function(idx) {
             var el = this.el.cells[idx];
-            this.group_item_checkbox = el.querySelector('input[name="SetGrpItem"]');
+            this.group_item_checkbox = el.querySelector('input[name^="SetGrpItem"]');
+            console.log(this.group_item_checkbox);
         },
         position: function(idx) {
             var el = this.el.cells[idx];
@@ -177,8 +178,10 @@
     };
 
     ItemGroup.prototype.renderDefault = function(cell, idx, align) {
+        var div = document.createElement('div');
+        div.textContent = this.child[0].el.cells[idx].textContent;
         cell.style.textAlign = align || 'center';
-        cell.textContent = this.child[0].el.cells[idx].textContent;
+        cell.appendChild(div);
     };
 
     ItemGroup.prototype.syncSelect = function(key) {
@@ -215,6 +218,13 @@
             }
         }
         el.checked = now;
+    };
+
+    ItemGroup.prototype.renderDropDate = function(cell, idx) {
+        this.renderDefault(cell, idx);
+        if(this.pk != 'drop_date') {
+            cell.children[0].style.visibility = 'hidden';
+        }
     };
 
     ItemGroup.prototype.renderItemPosition = function(position, idx) {
@@ -270,9 +280,13 @@
         price.appendChild(text);
         price.appendChild(checkbox);
         this.sell_checkbox = checkbox;
-        head_cell.querySelector('input[type="checkbox"]').addEventListener('change', (function() {
-            this.syncCheckbox('sell_checkbox');
-        }).bind(this));
+
+        var head_checkbox = head_cell.querySelector('input[type="checkbox"]');
+        if(head_checkbox){
+            head_checkbox.addEventListener('change', (function() {
+                this.syncCheckbox('sell_checkbox');
+            }).bind(this));
+        }
     };
 
     ItemGroup.prototype.renderGroupSetter = function(cell, idx) {
@@ -347,9 +361,11 @@
             case 'group_item':
                 this.renderGroupSetter(cell, idx);
                 break;
+            case 'drop_date':
+                this.renderDropDate(cell, idx);
+                break;
             case 'owner':
             case 'storage_date':
-            case 'drop_date':
                 if(this.pk === type) {
                     this.renderDefault(cell, idx);
                 }
@@ -376,21 +392,25 @@
 
     ItemGroup.prototype.shrink = function() {
         var table_body = this.row.parentNode;
-        this.child.forEach((c) => {
-            c.el.remove();
-            table_body.appendChild(c.el);
-            c.el.classList.add('hidden_row');
-        });
+        if(this.child.length > 1) {
+            this.child.forEach((c) => {
+                c.el.remove();
+                table_body.appendChild(c.el);
+                c.el.classList.add('hidden_row');
+            });
+        }
     };
 
     ItemGroup.prototype.expand = function() {
         var table_body = this.row.parentNode;
-        if(this.row) {
-            this.child.forEach((c) => {
-                c.el.remove();
-                table_body.insertBefore(c.el, this.row.nextSibling);
-                c.el.classList.remove('hidden_row');
-            });
+        if(this.child.length > 1) {
+            if(this.row) {
+                this.child.forEach((c) => {
+                    c.el.remove();
+                    table_body.insertBefore(c.el, this.row.nextSibling);
+                    c.el.classList.remove('hidden_row');
+                });
+            }
         }
     };
     function indexOf(obj, value) {
@@ -457,6 +477,40 @@
             }
         }
 
+        function addToggleBtn(table, db) {
+            var container =  document.createElement('span');
+            var text_expand = document.createElement('a');
+            var text_shrink = document.createElement('a');
+            text_expand.textContent = 'Expand All';
+            text_shrink.textContent = 'Shrink All';
+            text_expand.style.display = 'inline-block';
+            text_shrink.style.display = 'none';
+
+            container.style.cursor = 'pointer';
+            container.appendChild(text_expand);
+            container.appendChild(text_shrink);
+            table.tHead.rows[0].cells[0].appendChild(container);
+
+            text_expand.addEventListener('click', function(e) {
+                text_expand.style.display = 'none';
+                text_shrink.style.display = 'inline-block';
+                for(k in item_db) {
+                    if(item_db.hasOwnProperty(k)){
+                        item_db[k].expand();
+                    }
+                }
+            });
+            text_shrink.addEventListener('click', function(e) {
+                text_expand.style.display = 'inline-block';
+                text_shrink.style.display = 'none';
+                for(k in item_db) {
+                    if(item_db.hasOwnProperty(k)){
+                        item_db[k].shrink();
+                    }
+                }
+            });
+        }
+
 
         var head = table.tHead.rows[1];
         var table_map = parseTableIndex(head);
@@ -464,7 +518,9 @@
 
         if(/item|owner|storage_date|drop_date/.test(group_by)) {
             addCss();
-            initItemGroup(parseTable(table));
+            var item_db = parseTable(table);
+            initItemGroup(item_db);
+            addToggleBtn(table, item_db);
         }
     }
     init();
