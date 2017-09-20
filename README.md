@@ -1,2 +1,7 @@
-# wod_item_group
-This is a tempermonkey script to add item group feature for web game 'World of Dungeon'.
+# WOD Item Group
+A tempermonkey script for web game World of Dungeon [http://world-of-dungeons.org](http://world-of-dungeons.org)
+
+Add item group feature to item list.
+
+Screenshot:  
+![demo](demo.png)
