@@ -4,13 +4,13 @@
 // @updateURL       https://bitbucket.org/Xyzith/wod_item_group/raw/sync/group.user.js
 // @grant           none
 // @author          Taylor Tang
-// @version         2.4
+// @version         2.41
 // @description     Add item group feature
 // @include         *://*.world-of-dungeons.org/wod/spiel/hero/items.php*
 // ==/UserScript==
 
 (function(){
-    var LANGUAGE = Object.freeze({
+    const LANGUAGE = Object.freeze({
         COIN: '金币',
         ITEM: '物品',
         GROUP_ITEM: '团队物品',
@@ -23,9 +23,13 @@
         OWNER: '所有者',
         STORAGE_DATE: '入库时间',
         DROP_DATE: '掉落',
+        MARKET: '市集',
+        LOWEST_PRIZE: '最低价格',
+        SELLER_COMMENT: '卖家注释',
+        TRANSFER_TO: '移交给',
     });
 
-    function addCss() {
+    function insertCss() {
         var style = document.createElement('style');
         var row0 = document.querySelector('tr.row0');
         var row1 = document.querySelector('tr.row1');
@@ -34,6 +38,7 @@
             var row0_color = getComputedStyle(row0).getPropertyValue('background-color');
             var row1_color = getComputedStyle(row1).getPropertyValue('background-color');
             style.sheet.insertRule('table.content_table .hidden_row { display: none; }', 0);
+            style.sheet.insertRule('table.content_table .group_child > td:nth-child(1):before { content: "\u21D2"; }', 0);
             style.sheet.insertRule('table.content_table > tbody > :nth-child(2n) { background-color: ' + row1_color + '; }', 0);
             style.sheet.insertRule('table.content_table > tbody > :nth-child(2n+1) { background-color: ' + row0_color + '; }', 0);
         }
@@ -95,6 +100,7 @@
             this.item = item.textContent.replace(/!$/, '');
             this.use = use ? Number(use[1]) : 1;
             this.item_useability = item.className;
+            this.href = item.href;
         },
         owner: function(idx) {
             var owner = this.el.cells[idx];
@@ -238,7 +244,7 @@
         var head_select = head_cell.querySelector('select');
 
         if(head_select) {
-            position.style.textAlign = 'right';
+            position.style.textAlign = 'left';
             select.appendChild(newOps('-------', '0'));
             select.appendChild(newOps(LANGUAGE.WAREHOUSE, 'go_lager'));
             select.appendChild(newOps(LANGUAGE.GROUP_WAREHOUSE2, 'go_group_2'));
@@ -314,6 +320,10 @@
             a.innerHTML = '&#128194 ';
             a.textContent += this.child[0].item + ' (' + this.use + ')';
             a.className = this.child[0].item_useability;
+            a.addEventListener('click', (e) => {
+                wo(this.child[0].href);
+                e.stopPropagation();
+            });
             name.appendChild(a);
         } else {
             name.innerHTML = '&#128194 ' + this.child.length + ' items';
@@ -408,6 +418,7 @@
                     c.el.remove();
                     table_body.insertBefore(c.el, this.row.nextSibling);
                     c.el.classList.remove('hidden_row');
+                    c.el.classList.add('group_child');
                 });
             }
         }
@@ -516,7 +527,7 @@
         var group_by = indexOf(LANGUAGE, chomp(head.querySelector('.table_hl_sorted').value)).toLowerCase();
 
         if(/item|owner|storage_date|drop_date/.test(group_by)) {
-            addCss();
+            insertCss();
             var item_db = parseTable(table);
             initItemGroup(item_db);
             addToggleBtn(table, item_db);
