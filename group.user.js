@@ -4,7 +4,7 @@
 // @updateURL       https://bitbucket.org/Xyzith/wod_item_group/raw/sync/group.user.js
 // @grant           none
 // @author          Taylor Tang
-// @version         2.41
+// @version         2.42
 // @description     Add item group feature
 // @include         *://*.world-of-dungeons.org/wod/spiel/hero/items.php*
 // ==/UserScript==
@@ -244,7 +244,8 @@
         var head_select = head_cell.querySelector('select');
 
         if(head_select) {
-            position.style.textAlign = 'left';
+            position.style.textAlign = 'right';
+            position.style.paddingRight = '23px';
             select.appendChild(newOps('-------', '0'));
             select.appendChild(newOps(LANGUAGE.WAREHOUSE, 'go_lager'));
             select.appendChild(newOps(LANGUAGE.GROUP_WAREHOUSE2, 'go_group_2'));
@@ -272,6 +273,7 @@
         var checkbox = document.createElement('input');
         var head_cell = this.thead.cells[idx];
         price.style.textAlign = 'right';
+        price.classList.add('small');
         text.textContent = this.price;
         checkbox.type = 'checkbox';
         checkbox.addEventListener('change', (function(e){
